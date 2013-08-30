@@ -3349,14 +3349,15 @@ function drawCurve(points[], t):
       <script src="processing.patched.js"></script>
       <script src="colorpreprocess.js"></script>
 
-      <!-- MathJax for beautiful LaTeX functions -->
+      <!-- MathJax, for beautiful LaTeX functions -->
       <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
           displayAlign: "left",
           displayIndent: "2em",
           TeX: {
             extensions: ["color.js"]
-          }
+          },
+          skipStartupTypeset: true // we're going to lazy load MathJax.
         });
       </script>
       <script>(function(){
@@ -3366,11 +3367,37 @@ function drawCurve(points[], t):
           document.head.appendChild(script);
         }
       }());</script>
-
-      <!--
-      <script src="webcomponents/web-components.js"></script>
-      <script src="webcomponents/custom-elements.js"></script>
-      -->
+      <script>
+        // lazy loading
+        document.addEventListener("DOMContentLoaded", function() {
+          var loadTimeout = 200,
+              loadPriority = 1;
+          Array.prototype.slice.call(document.querySelectorAll('p')).forEach(function(p) {
+            if(p.innerHTML.indexOf("\\[")>-1) {
+              p.loadMath = function() {
+                window.removeEventListener("scroll", checkVisibility);
+                if(MathJax) {
+                  MathJax.Hub.Queue(["Typeset", MathJax.Hub, p]);
+                }
+                p.loadMath = function(){};
+              };
+              var checkVisibility = function(evt) {
+                var top = window.scrollY,
+                    height = window.innerHeight,
+                    pad = 200,
+                    bbox = p.getBoundingClientRect();
+                // show when nearly in view, rather than once in view.
+                if(bbox.top > -pad && bbox.top < height+pad || bbox.bottom > -pad && bbox.bottom < height+pad) {
+                  console.log("bing");
+                  p.loadMath();
+                }
+              };
+              window.addEventListener("scroll", checkVisibility);
+              setTimeout(p.loadMath, loadTimeout * loadPriority++);
+            }
+          });
+        });
+      </script>
 
       <!--
         no tracking info: http://support.addthis.com/customer/portal/articles/1013558-removing-all-hashtags-anchors-from-your-urls
@@ -3382,6 +3409,7 @@ function drawCurve(points[], t):
       </script>
       <script src="http://s7.addthis.com/js/300/addthis_widget.js#pubid=xa-516a3187281448fc" async></script>
 
+      <!-- comments and feedback -->
       <script type="text/javascript" src="EasyPageComments.js"></script>
       <script type="text/javascript">
         if(EasyPageComments) {
